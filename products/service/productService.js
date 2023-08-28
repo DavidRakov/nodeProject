@@ -1,4 +1,5 @@
 const getProducts = require("../dal/productsDal.js");
+const normalize = require("../normalize/normalize.js");
 
 const allProducts = async () => {
   try {
@@ -25,12 +26,18 @@ const oneProduct = async (id) => {
 
 const addProduct = async (info) => {
   try {
-    if (typeof info !== "object") throw new Error("not A valid info");
-
+    if (
+      typeof info !== "object" ||
+      !info.title ||
+      !info.description ||
+      !info.category
+    )
+      throw new Error("not A valid info");
+    const normalCard = await normalize.normalizeObject(info);
     const products = await getProducts.returnProducts();
     // להעביר את ההמרה של האובייקט שקיבלנו מצד לקוח תהליך של נירמול שבו ייתווספו לו המפתחות שהוא צריך כדי להיכנס למאגר מידע
 
-    products.push(info);
+    products.push(normalCard);
     await getProducts.addProductDal(products);
     return Promise.resolve("Mission successful");
   } catch (error) {
@@ -57,7 +64,7 @@ const updateProduct = async (id, newInfo) => {
 
 const deleteProduct = async (id) => {
   try {
-    const products = await getProducts.returnProducts();
+    let products = await getProducts.returnProducts();
     if (!products.length) throw new Error("no products in dataBase");
     const remove = await products.filter((element) => element.id !== +id);
     if (remove.length === products.length) throw new Error("no products");
